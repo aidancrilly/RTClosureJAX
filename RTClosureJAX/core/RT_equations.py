@@ -33,6 +33,7 @@ def initialise_VariableEddingtonFactor(RT_args, sim_params):
     VEF_sim_params = sim_params.copy()
 
     VEF_RT_args['Np'] = 3
+    VEF_RT_args['tprev'] = 0.0
     VEF_sim_params['dt0'] = 1e-1*VEF_RT_args['dx']
 
     VEF_RT_args['Closure'] = create_lambda_params_constrained_pade(1.0/3.0,1.0,2.0)
@@ -54,6 +55,9 @@ def VEF_RT_equations(t,y,args):
     W,F,V = y[0,:],y[1,:],y[2,:]
     Q = SourceTerm(t)
 
+    dt = t-args['tprev']
+    args['tprev'] = t
+
     # Add ghost cell
     F_ghost = jnp.insert(F,0,0.0)
     W_ghost = jnp.insert(W,0,W[0])
@@ -64,10 +68,9 @@ def VEF_RT_equations(t,y,args):
     dWdt = (Q+V-W-divF)/epsilon
 
     # Eddington factor calculation
-    W_face   = 0.5*(W_ghost[1:]+W_ghost[:-1])
-    VEF_face = jnp.abs(F_ghost)/(W_face+delta)
-    p_face   = Closure(VEF_face,a,b)
-    p = 0.5*(p_face[1:]+p_face[:-1])
+    VEF = jnp.abs(0.5*(F_ghost[:-1]+F_ghost[1:]))/(W+delta)
+    p   = Closure(VEF,a,b)    
+    # Smoothing
     p_ghost = jnp.append(p,p[-1])
     p_ghost = jnp.insert(p_ghost,0,p[0])
     p = 0.25*(p_ghost[:-2]+2*p_ghost[1:-1]+p_ghost[2:])
@@ -75,8 +78,9 @@ def VEF_RT_equations(t,y,args):
     # Radiation energy flux update
     pW = p*W
     pW_ghost = jnp.append(pW,pW[-1])
-    F_ghost = jnp.append(F_ghost,F_ghost[1])
-    dFdt = (-jnp.diff(pW_ghost,n=1)/dx-F)/epsilon
+    F_ghost  = jnp.append(F_ghost,F_ghost[-1])
+    hyperbolic_term = -jnp.diff(pW_ghost,n=1)/dx+(0.5/(1e-1*dx))*(F_ghost[:-2]+F_ghost[2:]-2*F_ghost[1:-1])
+    dFdt = (hyperbolic_term-F)/epsilon
 
     # Material energy density update
     dVdt = W-V
@@ -147,7 +151,8 @@ def initialise_FluxLimitedDiffusion(RT_args, sim_params, fluxlimiter):
     FLD_sim_params = sim_params.copy()
 
     FLD_RT_args['Np'] = 3
-    FLD_sim_params['dt0'] = 1e-1*FLD_RT_args['dx']
+    # Smaller time step needed to control the diffusive branch
+    FLD_sim_params['dt0'] = 1e-2*FLD_RT_args['dx']
 
     FLD_RT_args['Closure'] = create_lambda_params_constrained_pade(0.0,1.0,1.0)
     FLD_RT_args['FluxLimiter'] = fluxlimiter
@@ -176,25 +181,24 @@ def FLD_RT_equations(t,y,args):
     P_ghost = jnp.insert(P,0,P[1])
     P_ghost = jnp.append(P_ghost,P[-1])
 
-    # Eddington factor & 
-    EF = P_ghost/(W_ghost+delta)
-    EF_face = 0.5*(EF[1:]+EF[:-1])
-    W_face = 0.5*(W_ghost[:-1]+W_ghost[1:])
     # Normalised gradient
     diff_W = jnp.diff(W_ghost,n=1)
-    R = diff_W/dx/(W_face+delta)
-    R_sq = R**2
-    # Flux limited radiative flux calculation
+    W_face = jnp.where(diff_W < 0, W_ghost[:-1], W_ghost[1:])
+    R      = diff_W/(W_face+delta)/dx
+    R_sq   = R**2
+    # Eddington factor
+    EF       = P_ghost/(W_ghost+delta)
+    EF_face  = jnp.where(diff_W < 0, EF[:-1] , EF[1:])
     p        = EF_face
-    lamb     = FluxLimiter(p,R_sq)
-    F_ghost  = -lamb*R*jnp.where(diff_W < 0, W_ghost[:-1], W_ghost[1:])
+    # Flux limited radiative flux calculation
+    lamb      = FluxLimiter(p,R_sq)
+    F_ghost   = -lamb*(diff_W/dx)
 
     # Radiation energy density update
     divF = jnp.diff(F_ghost,n=1)/dx
     dWdt = (Q+V-W-divF)/epsilon
 
     # Radiation pressure factor update
-    EF_face = jnp.where(F_ghost < 0, EF[1:] , EF[:-1])
     divaF = jnp.diff(Closure(EF_face,a,b)*F_ghost,n=1)/dx
     dPdt = ((Q+V-3*P)/3.0-divaF)/epsilon
 

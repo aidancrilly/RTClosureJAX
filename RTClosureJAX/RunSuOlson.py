@@ -8,7 +8,7 @@ from time import time
 import matplotlib.pyplot as plt
 
 # Create Su Olson problem set up
-Nx = 400
+Nx = 1200
 SuOlson_RT_args, SuOlson_sim_params = initialise_SuOlson_problem(Nx)
 
 # Initialise diffrax models
@@ -27,7 +27,7 @@ SuOlson_sim_params = initialise_diffrax_defaults(SuOlson_sim_params)
 l_DiscreteOrdinates    = False
 l_ThirdOrderMoment     = False
 l_VariableEddington    = True
-l_FluxLimitedDiffusion = True
+l_FluxLimitedDiffusion = False
 
 if(l_DiscreteOrdinates):
     # Discrete Ordinates solution
@@ -65,7 +65,7 @@ if(l_VariableEddington):
 
 if(l_FluxLimitedDiffusion):
     # Flux Limited Diffusion solution
-    FLD_RT_args, FLD_sim_params, FLD_equations = initialise_FluxLimitedDiffusion(SuOlson_RT_args, SuOlson_sim_params,Levermore_fluxlimiter)
+    FLD_RT_args, FLD_sim_params, FLD_equations = initialise_FluxLimitedDiffusion(SuOlson_RT_args, SuOlson_sim_params, Levermore_fluxlimiter)
     param_RT_solve = create_params_lambda_solver_function(FLD_equations, FLD_RT_args, FLD_sim_params)
     a = np.array([-0.05065705, -0.05513487,  0.84024453])
     b = np.array([0.04694922,  0.08595726, -0.17512433])
@@ -94,8 +94,6 @@ ax4.set_xlabel("x")
 ax4.axhline(1./3.,c='b',ls='--')
 ax4.set_ylim(0.24,1.1)
 ax1.set_xlim(0.0,SuOlson_sim_params['x'][-1])
-
-ax1.set_yscale('log')
 
 for i in range(SuOlson_sim_params['Nt']):
     if(l_DiscreteOrdinates):
