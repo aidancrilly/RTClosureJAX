@@ -12,7 +12,7 @@ Nx = 1200
 SuOlson_RT_args, SuOlson_sim_params = initialise_SuOlson_problem(Nx)
 
 # Initialise diffrax models
-SuOlson_sim_params = initialise_diffrax_defaults(SuOlson_sim_params)
+SuOlson_sim_params = initialise_diffrax(SuOlson_sim_params)
 
 #
 # Following steps are made for any solution

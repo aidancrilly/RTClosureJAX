@@ -5,10 +5,24 @@ import numpy as np
 SuOlsonDataDir = r"C:\\Users\\Aidan Crilly\\Documents\\GitHub\\RTClosureJAX\\SuOlsonData\\"
 
 def DualExternalSource(x,tau,x0,tau0,dx):
+    """
+    
+    Source term in the 'modified' Su Olson problem
+
+    Tanh used over Heaviside in spatial dimension to smooth discontinuous behaviour
+
+    """
     S = 0.5*(jnp.tanh((x0-x)/(dx))+1+jnp.tanh((x0-(x[-1]-x))/(dx))+1)*jnp.heaviside(tau0-tau,0.5)/(2*x0)
     return S
 
 def ExternalSource(x,tau,x0,tau0,dx):
+    """
+    
+    Source term in the original Su Olson problem
+
+    Tanh used over Heaviside in spatial dimension to smooth discontinuous behaviour
+
+    """
     S = 0.5*(jnp.tanh((x0-x)/(dx))+1)*jnp.heaviside(tau0-tau,0.5)/(2*x0)
     return S
 
@@ -88,7 +102,11 @@ def initialise_ModifiedSuOlson_problem(Nx,L=4.0):
     return ModifiedSuOlson_RT_args,ModifiedSuOlson_sim_params
 
 def get_SuOlson_analytic_solution(SuOlson_sim_params):
-    # Load analytic solution
+    """
+    
+    Loads Su Olson analytic solution and returns data dictionary
+    
+    """
     x_data = np.loadtxt(f"{SuOlsonDataDir}SuOlsonx.dat")
     W_data = np.loadtxt(f"{SuOlsonDataDir}SuOlson_W_transport.dat")
     V_data = np.loadtxt(f"{SuOlsonDataDir}SuOlson_V_transport.dat")

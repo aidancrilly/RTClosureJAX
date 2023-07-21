@@ -18,6 +18,10 @@ epsilon = 4 (radiation constant)/(heat capacity prefactor)
 x = normalised position coordinate
 tau/t = normalised time coordinate
 
+For moment models:
+W, V, P are cell centred quantities
+F is face centred
+
 Reflective boundaries
 - for Su Olson problem, left hand boundary placed sufficiently far away
 
@@ -28,13 +32,13 @@ delta = 1e-10
 
 # Variable Eddington factor
 
-def initialise_VariableEddingtonFactor(RT_args, sim_params):
+def initialise_VariableEddingtonFactor(RT_args, sim_params, dt_mult = 1e-1):
     VEF_RT_args    = RT_args.copy()
     VEF_sim_params = sim_params.copy()
 
     VEF_RT_args['Np'] = 3
-    VEF_RT_args['tprev'] = 0.0
-    VEF_sim_params['dt0'] = 1e-1*VEF_RT_args['dx']
+    VEF_sim_params['dt0'] = dt_mult*VEF_RT_args['dx']
+    VEF_RT_args['stability_const'] = VEF_RT_args['dx']/VEF_sim_params['dt0']
 
     VEF_RT_args['Closure'] = create_lambda_params_constrained_pade(1.0/3.0,1.0,2.0)
 
@@ -50,13 +54,11 @@ def VEF_RT_equations(t,y,args):
     Np = args['Np']
     Nx = args['Nx']
     Closure = args['Closure']
+    stability_const = args['stability_const']
 
     y = y.reshape(Np,Nx)
     W,F,V = y[0,:],y[1,:],y[2,:]
     Q = SourceTerm(t)
-
-    dt = t-args['tprev']
-    args['tprev'] = t
 
     # Add ghost cell
     F_ghost = jnp.insert(F,0,0.0)
@@ -70,7 +72,7 @@ def VEF_RT_equations(t,y,args):
     # Eddington factor calculation
     VEF = jnp.abs(0.5*(F_ghost[:-1]+F_ghost[1:]))/(W+delta)
     p   = Closure(VEF,a,b)    
-    # Smoothing
+    # Smoothing, average to face and back to cell centre
     p_ghost = jnp.append(p,p[-1])
     p_ghost = jnp.insert(p_ghost,0,p[0])
     p = 0.25*(p_ghost[:-2]+2*p_ghost[1:-1]+p_ghost[2:])
@@ -79,7 +81,8 @@ def VEF_RT_equations(t,y,args):
     pW = p*W
     pW_ghost = jnp.append(pW,pW[-1])
     F_ghost  = jnp.append(F_ghost,F_ghost[-1])
-    hyperbolic_term = -jnp.diff(pW_ghost,n=1)/dx+(0.5/(1e-1*dx))*(F_ghost[:-2]+F_ghost[2:]-2*F_ghost[1:-1])
+    # Lax-Friedrich-like term added for stability
+    hyperbolic_term = -jnp.diff(pW_ghost,n=1)/dx+(stability_const*0.5/dx)*(F_ghost[:-2]+F_ghost[2:]-2*F_ghost[1:-1])
     dFdt = (hyperbolic_term-F)/epsilon
 
     # Material energy density update
@@ -90,12 +93,12 @@ def VEF_RT_equations(t,y,args):
 
 # Third order moment equations
 
-def initialise_ThirdOrderMoment(RT_args, sim_params):
+def initialise_ThirdOrderMoment(RT_args, sim_params, dt_mult = 1e-1):
     TMC_RT_args    = RT_args.copy()
     TMC_sim_params = sim_params.copy()
 
     TMC_RT_args['Np'] = 4
-    TMC_sim_params['dt0'] = 1e-1*TMC_RT_args['dx']
+    TMC_sim_params['dt0'] = dt_mult*TMC_RT_args['dx']
 
     TMC_RT_args['Closure'] = create_lambda_params_constrained_pade(0.0,1.0,1.0)
 
@@ -146,13 +149,13 @@ def TMC_RT_equations(t,y,args):
 
 # Flux-Limited Diffusion
 
-def initialise_FluxLimitedDiffusion(RT_args, sim_params, fluxlimiter):
+def initialise_FluxLimitedDiffusion(RT_args, sim_params, fluxlimiter, dt_mult = 1e-2):
     FLD_RT_args    = RT_args.copy()
     FLD_sim_params = sim_params.copy()
 
     FLD_RT_args['Np'] = 3
     # Smaller time step needed to control the diffusive branch
-    FLD_sim_params['dt0'] = 1e-2*FLD_RT_args['dx']
+    FLD_sim_params['dt0'] = dt_mult*FLD_RT_args['dx']
 
     FLD_RT_args['Closure'] = create_lambda_params_constrained_pade(0.0,1.0,1.0)
     FLD_RT_args['FluxLimiter'] = fluxlimiter
@@ -214,13 +217,13 @@ def FLD_RT_equations(t,y,args):
 mun = jnp.array(np.loadtxt(f"{SimDataDir}S32_mu.dat"))
 wn = jnp.array(np.loadtxt(f"{SimDataDir}S32_w.dat"))
 
-def initialise_DiscreteOrdinates(RT_args, sim_params):
+def initialise_DiscreteOrdinates(RT_args, sim_params,dt_mult = 1e-1):
     SN_RT_args    = RT_args.copy()
     SN_sim_params = sim_params.copy()
 
     Nm = mun.shape[0]
     SN_RT_args['Np'] = Nm+1
-    SN_sim_params['dt0'] = 1e-1*SN_RT_args['dx']
+    SN_sim_params['dt0'] = dt_mult*SN_RT_args['dx']
 
     return SN_RT_args, SN_sim_params, DiscreteOrdinates_RT_equations
 
