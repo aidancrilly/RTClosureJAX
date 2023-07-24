@@ -1,7 +1,7 @@
-from core.solver import *
-from core.utils import *
-from core.RT_equations import *
-from core.closure_funcs import Levermore_fluxlimiter, Larsen_2_fluxlimiter, diffusion_fluxlimter
+from RTClosureJAX.solver import *
+from RTClosureJAX.utils import *
+from RTClosureJAX.RT_equations import *
+from RTClosureJAX.closure_funcs import Levermore_fluxlimiter, Larsen_2_fluxlimiter, diffusion_fluxlimter
 
 from time import time
 

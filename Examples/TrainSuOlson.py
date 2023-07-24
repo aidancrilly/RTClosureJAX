@@ -1,8 +1,8 @@
-from core.solver import *
-from core.utils import *
-from core.RT_equations import *
-from core.closure_funcs import *
-from core.optimizer import *
+from RTClosureJAX.solver import *
+from RTClosureJAX.utils import *
+from RTClosureJAX.RT_equations import *
+from RTClosureJAX.closure_funcs import *
+from RTClosureJAX.optimizer import *
 
 import json
 from time import time
