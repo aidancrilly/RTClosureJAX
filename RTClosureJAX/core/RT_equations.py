@@ -2,8 +2,7 @@ import jax.numpy as jnp
 import jax
 import numpy as np
 
-SimDataDir = r"C:\\Users\\Aidan Crilly\\Documents\\GitHub\\RTClosureJAX\\SimData\\"
-
+from .utils import SimDataDir
 from .closure_funcs import *
 
 """ 

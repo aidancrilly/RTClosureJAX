@@ -27,7 +27,7 @@ def ClosureLoss(params,model,analyticsol,sim_params):
 
     return loss
 
-def create_learning_rate_schedule(init_value,total_steps,decay_rate,boundaries):
+def create_piecewise_learning_rate_schedule(init_value,total_steps,decay_rate,boundaries):
     boundaries_and_scales = {int(total_steps*b) : decay_rate for b in boundaries}
     learning_rate_schedule = optax.piecewise_constant_schedule(init_value,boundaries_and_scales=boundaries_and_scales)
     return learning_rate_schedule

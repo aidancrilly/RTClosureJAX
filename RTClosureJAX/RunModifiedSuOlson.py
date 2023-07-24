@@ -11,6 +11,9 @@ import matplotlib.pyplot as plt
 Nx = 1200
 SuOlson_RT_args, SuOlson_sim_params = initialise_ModifiedSuOlson_problem(Nx)
 
+# Load previously trained parameters
+optimal_params = load_optimal_params("opt_closure_params.json")
+
 # Initialise diffrax models
 SuOlson_sim_params = initialise_diffrax(SuOlson_sim_params)
 
@@ -45,8 +48,8 @@ if(l_ThirdOrderMoment):
     # Third Order Moment solution
     TMC_RT_args, TMC_sim_params, TMC_equations = initialise_ThirdOrderMoment(SuOlson_RT_args, SuOlson_sim_params)
     param_RT_solve = create_params_lambda_solver_function(TMC_equations, TMC_RT_args, TMC_sim_params)
-    a = np.array([-0.05065705, -0.05513487,  0.84024453])
-    b = np.array([0.04694922,  0.08595726, -0.17512433])
+    a = jnp.array(optimal_params['TMC']['a'])
+    b = jnp.array(optimal_params['TMC']['b'])
     start = time()
     TMC_sol = param_RT_solve(a,b)
     print(f'TMC simulation complete in {time()-start} s')
@@ -56,8 +59,8 @@ if(l_VariableEddington):
     # Variable Eddington Factor solution
     VEF_RT_args, VEF_sim_params, VEF_equations = initialise_VariableEddingtonFactor(SuOlson_RT_args, SuOlson_sim_params)
     param_RT_solve = create_params_lambda_solver_function(VEF_equations, VEF_RT_args, VEF_sim_params)
-    a = jnp.array([-0.5403172,  1.3603048])
-    b = jnp.array([-0.5747044 , -0.57543194,  0.18687488])
+    a = jnp.array(optimal_params['VEF']['a'])
+    b = jnp.array(optimal_params['VEF']['b'])
     start = time()
     VEF_sol = param_RT_solve(a,b)
     print(f'VEF simulation complete in {time()-start} s')
@@ -67,8 +70,8 @@ if(l_FluxLimitedDiffusion):
     # Flux Limited Diffusion solution
     FLD_RT_args, FLD_sim_params, FLD_equations = initialise_FluxLimitedDiffusion(SuOlson_RT_args, SuOlson_sim_params, Levermore_fluxlimiter)
     param_RT_solve = create_params_lambda_solver_function(FLD_equations, FLD_RT_args, FLD_sim_params)
-    a = np.array([-0.05065705, -0.05513487,  0.84024453])
-    b = np.array([0.04694922,  0.08595726, -0.17512433])
+    a = jnp.array(optimal_params['FLD']['a'])
+    b = jnp.array(optimal_params['FLD']['b'])
     start = time()
     FLD_sol = param_RT_solve(a,b)
     print(f'FLD simulation complete in {time()-start} s')

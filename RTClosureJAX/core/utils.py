@@ -1,8 +1,10 @@
 import jax.numpy as jnp
 import jax
 import numpy as np
+import json
 
 SuOlsonDataDir = r"C:\\Users\\Aidan Crilly\\Documents\\GitHub\\RTClosureJAX\\SuOlsonData\\"
+SimDataDir = r"C:\\Users\\Aidan Crilly\\Documents\\GitHub\\RTClosureJAX\\SimData\\"
 
 def DualExternalSource(x,tau,x0,tau0,dx):
     """
@@ -116,3 +118,13 @@ def get_SuOlson_analytic_solution(SuOlson_sim_params):
     analyticsol = {'x' : x_data, 'W' : W_data.T[:Nt,:], 'V' : V_data.T[:Nt,:]}
 
     return analyticsol
+
+def load_optimal_params(opt_param_file):
+    if(opt_param_file.split('.')[-1] == 'json'):
+        with open(SimDataDir+opt_param_file, 'r') as json_file:
+            json_dict = json.load(json_file)
+        return json_dict
+    else:
+        print("Expected JSON file for optimal parameter data...")
+        print("> Returning None")
+        return None

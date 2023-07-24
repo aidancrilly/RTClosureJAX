@@ -4,6 +4,7 @@ from core.RT_equations import *
 from core.closure_funcs import *
 from core.optimizer import *
 
+import json
 from time import time
 import matplotlib.pyplot as plt
 
@@ -16,8 +17,8 @@ SuOlson_sim_params = initialise_diffrax(SuOlson_sim_params)
 # Initialise optax learning rate schedule
 Ntrain_steps = 100
 decay_rate   = 0.5
-boundaries   = [0.5]#[0.1,0.5,0.75]
-lr_schedule  = create_learning_rate_schedule(1e-2,Ntrain_steps,decay_rate,boundaries)
+boundaries   = [0.5]
+lr_schedule  = create_piecewise_learning_rate_schedule(1e-2,Ntrain_steps,decay_rate,boundaries)
 
 # Get analytic solution
 SuOlson_analytic_solution = get_SuOlson_analytic_solution(SuOlson_sim_params)
@@ -36,6 +37,7 @@ l_ThirdOrderMoment     = True
 l_VariableEddington    = True
 l_FluxLimitedDiffusion = True
 l_plot_results         = True
+l_save_results         = False
 
 if(l_ThirdOrderMoment):
     # Third Order Moment solution
@@ -132,3 +134,19 @@ if(l_plot_results):
     fig.tight_layout()
 
     plt.show()
+
+if(l_save_results):
+    json_filename = SimDataDir+'new_opt_closure_params.json'
+    json_write_dict = {}
+    if(l_ThirdOrderMoment):
+        json_write_dict['TMC'] = {'a' : list(TMC_opt_params['a']), 'b' : list(TMC_opt_params['b'])}
+
+    if(l_VariableEddington):
+        json_write_dict['VEF'] = {'a' : list(VEF_opt_params['a']), 'b' : list(VEF_opt_params['b'])}
+
+    if(l_FluxLimitedDiffusion):
+        json_write_dict['FLD'] = {'a' : list(FLD_opt_params['a']), 'b' : list(FLD_opt_params['b'])}
+    
+    json_write = json.dumps(json_write_dict, indent=4)
+    with open(json_filename,'w') as f:
+        print(json_write, file=f)
