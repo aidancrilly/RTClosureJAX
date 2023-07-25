@@ -43,10 +43,9 @@ def unconstrained_pade(x,a,b):
     a, b : free parameters
     
     """
-    y = 1-x
-    y = jnp.where(y > 1, 1, y)
-    y = jnp.where(y < 0, 0, y)
-    f = jnp.polyval(a,y)/jnp.polyval(b,y)
+    x = jnp.where(x > 1, 1, x)
+    x = jnp.where(x < 0, 0, x)
+    f = jnp.polyval(a,x)/jnp.polyval(b,x)
     return f
 
 def Levermore_fluxlimiter(p,R_sq):

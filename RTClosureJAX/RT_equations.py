@@ -17,10 +17,6 @@ epsilon = 4 (radiation constant)/(heat capacity prefactor)
 x = normalised position coordinate
 tau/t = normalised time coordinate
 
-For moment models:
-W, V, P are cell centred quantities
-F is face centred
-
 Reflective boundaries
 - for Su Olson problem, left hand boundary placed sufficiently far away
 
@@ -31,17 +27,80 @@ delta = 1e-10
 
 # Variable Eddington factor
 
-def initialise_VariableEddingtonFactor(RT_args, sim_params, dt_mult = 1e-1):
+def initialise_VariableEddingtonFactor(RT_args, sim_params, dt_mult = 1e-1, stability_const = 0.1):
     VEF_RT_args    = RT_args.copy()
     VEF_sim_params = sim_params.copy()
 
     VEF_RT_args['Np'] = 3
     VEF_sim_params['dt0'] = dt_mult*VEF_RT_args['dx']
-    VEF_RT_args['stability_const'] = VEF_RT_args['dx']/VEF_sim_params['dt0']
+    VEF_RT_args['stability_const'] = stability_const
 
     VEF_RT_args['Closure'] = create_lambda_params_constrained_pade(1.0/3.0,1.0,2.0)
+    VEF_RT_args['GradClosure'] = jax.vmap(jax.grad(VEF_RT_args['Closure']),in_axes = (0,None,None))
 
     return VEF_RT_args, VEF_sim_params, VEF_RT_equations
+
+def VEFRoeSolve(delta_u,Fl,Fr,C,D,stability_const):
+    """
+    
+    Following "One-dimensional Riemann solvers and the maximum entropy closure" by Brunner and Holloway
+
+    Using the Roe matrix:
+
+    R(u_l,u_r) = ( 0, 1)
+                 ( D, C)
+
+    Extra dissipation is added as eigenvalues can go through zero
+    
+    """
+
+    # Eigenvalues
+    det = C**2+4*D
+    sqrtdet = jnp.sqrt(jnp.where(det > 0.0, det , 0.0))
+    lambda_plus  = 0.5*(C+sqrtdet)
+    lambda_minus = 0.5*(C-sqrtdet)
+    # Right eigenvectors
+    r_plus  = jnp.array((-lambda_minus,D))/jnp.sqrt(1+lambda_minus**2)
+    r_minus = jnp.array((-lambda_plus,D))/jnp.sqrt(1+lambda_plus**2)
+    # Left eigenvectors
+    l_plus  = jnp.array(( lambda_plus-C ,1.0))/jnp.sqrt(1+(lambda_plus-C)**2)
+    l_minus = jnp.array(( lambda_minus-C,1.0))/jnp.sqrt(1+(lambda_minus-C)**2)
+
+    CorrectionTerm = jnp.abs(lambda_plus)*jnp.outer(r_plus,l_plus)+jnp.abs(lambda_minus)*jnp.outer(r_minus,l_minus)
+    # Adding dissipation since eigenvalues can go to zero
+    CorrectionTerm += stability_const*jnp.eye(2)
+
+    RoeTerm = jnp.matmul(CorrectionTerm,delta_u)
+
+    flux = 0.5*(Fl+Fr)-0.5*RoeTerm
+    return flux
+
+vectorised_VEFRoeSolve = jax.vmap(VEFRoeSolve,in_axes=(1,1,1,0,0,None),out_axes=1)
+
+def VEFComputeRoeCoefficients(Closure,GradClosure,FR,p,a,b):
+    """
+
+    D = (p_l f_r - p_r f_l)/(f_r - f_l)
+    C = (p_r - p_l)/(f_r - f_l)
+
+    where p is the Eddington factor and f is the flux ratio
+    
+    """
+
+    f_l = FR[:-1]
+    f_r = FR[1:]
+    p_l = p[:-1]
+    p_r = p[1:]
+
+    face_f  = 0.5*(f_r+f_l)
+    delta_f = (f_r-f_l)
+    sign_f_f = jnp.sign(face_f)
+    abs_d_f = jnp.abs(delta_f)
+
+    C = jnp.where(abs_d_f > 1e-5, (p_r-p_l)/(delta_f+delta), sign_f_f*GradClosure(jnp.abs(face_f),a,b))
+    D = jnp.where(abs_d_f > 1e-5, (p_l*f_r-p_r*f_l)/(delta_f+delta), Closure(jnp.abs(face_f),a,b)-sign_f_f*face_f*GradClosure(jnp.abs(face_f),a,b))
+
+    return C,D
 
 def VEF_RT_equations(t,y,args):
     # Unpack parameters
@@ -52,40 +111,40 @@ def VEF_RT_equations(t,y,args):
     dx = args['dx']
     Np = args['Np']
     Nx = args['Nx']
+    GradClosure = args['GradClosure']
     Closure = args['Closure']
     stability_const = args['stability_const']
 
     y = y.reshape(Np,Nx)
     W,F,V = y[0,:],y[1,:],y[2,:]
     Q = SourceTerm(t)
+    # N.B. flux F is now cell centred for use in the Riemann solver
 
     # Add ghost cell
-    F_ghost = jnp.insert(F,0,0.0)
+    F_ghost = jnp.insert(F,0,-F[0])
+    F_ghost = jnp.append(F_ghost,-F[-1])
     W_ghost = jnp.insert(W,0,W[0])
     W_ghost = jnp.append(W_ghost,W[-1])
 
-    # Radiation energy density update
-    divF = jnp.diff(F_ghost,n=1)/dx
-    dWdt = (Q+V-W-divF)/epsilon
+    # Source and sink terms
+    dWdt = (Q+V-W)/epsilon
+    dFdt = (-F)/epsilon
+    dVdt = W-V
 
     # Eddington factor calculation
-    VEF = jnp.abs(0.5*(F_ghost[:-1]+F_ghost[1:]))/(W+delta)
-    p   = Closure(VEF,a,b)    
-    # Smoothing, average to face and back to cell centre
-    p_ghost = jnp.append(p,p[-1])
-    p_ghost = jnp.insert(p_ghost,0,p[0])
-    p = 0.25*(p_ghost[:-2]+2*p_ghost[1:-1]+p_ghost[2:])
+    FR = F_ghost/(W_ghost+delta) 
+    p = Closure(jnp.abs(FR),a,b)
 
-    # Radiation energy flux update
-    pW = p*W
-    pW_ghost = jnp.append(pW,pW[-1])
-    F_ghost  = jnp.append(F_ghost,F_ghost[-1])
-    # Lax-Friedrich-like term added for stability
-    hyperbolic_term = -jnp.diff(pW_ghost,n=1)/dx+(stability_const*0.5/dx)*(F_ghost[:-2]+F_ghost[2:]-2*F_ghost[1:-1])
-    dFdt = (hyperbolic_term-F)/epsilon
-
-    # Material energy density update
-    dVdt = W-V
+    # Riemann problem using Roe-type solver
+    C,D = VEFComputeRoeCoefficients(Closure,GradClosure,FR,p,a,b)
+    # Assemble left and right properties
+    delta_u = jnp.vstack((W_ghost[1:]-W_ghost[:-1],F_ghost[1:]-F_ghost[:-1]))
+    Fl = jnp.vstack((F_ghost[:-1],p[:-1]*W_ghost[:-1]))
+    Fr = jnp.vstack((F_ghost[1:],p[1:]*W_ghost[1:]))
+    RoeFlux = vectorised_VEFRoeSolve(delta_u,Fl,Fr,C,D,stability_const)
+    # Add advective terms onto time derivatives
+    dWdt += -jnp.diff(RoeFlux[0,:],n=1)/dx/epsilon
+    dFdt += -jnp.diff(RoeFlux[1,:],n=1)/dx/epsilon
 
     dydt = jnp.vstack((dWdt,dFdt,dVdt))
     return dydt.flatten()

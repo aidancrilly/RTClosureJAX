@@ -33,10 +33,10 @@ SuOlson_analytic_solution = get_SuOlson_analytic_solution(SuOlson_sim_params)
 #
 
 # Logical switches
-l_ThirdOrderMoment     = True
+l_ThirdOrderMoment     = False
 l_VariableEddington    = True
-l_FluxLimitedDiffusion = True
-l_plot_results         = True
+l_FluxLimitedDiffusion = False
+l_plot_results         = False
 l_save_results         = False
 
 if(l_ThirdOrderMoment):
@@ -139,13 +139,13 @@ if(l_save_results):
     json_filename = SimDataDir+'new_opt_closure_params.json'
     json_write_dict = {}
     if(l_ThirdOrderMoment):
-        json_write_dict['TMC'] = {'a' : list(TMC_opt_params['a']), 'b' : list(TMC_opt_params['b'])}
+        json_write_dict['TMC'] = {'a' : TMC_opt_params['a'].tolist(), 'b' : TMC_opt_params['b'].tolist()}
 
     if(l_VariableEddington):
-        json_write_dict['VEF'] = {'a' : list(VEF_opt_params['a']), 'b' : list(VEF_opt_params['b'])}
+        json_write_dict['VEF'] = {'a' : VEF_opt_params['a'].tolist(), 'b' : VEF_opt_params['b'].tolist()}
 
     if(l_FluxLimitedDiffusion):
-        json_write_dict['FLD'] = {'a' : list(FLD_opt_params['a']), 'b' : list(FLD_opt_params['b'])}
+        json_write_dict['FLD'] = {'a' : FLD_opt_params['a'].tolist(), 'b' : FLD_opt_params['b'].tolist()}
     
     json_write = json.dumps(json_write_dict, indent=4)
     with open(json_filename,'w') as f:
