@@ -13,16 +13,16 @@ def initialise_diffrax(sim_params, diffrax_solver = diffrax.Heun(), diffrax_adjo
     sim_params['adjoint'] = diffrax_adjoint
     return sim_params
 
-def create_params_lambda_solver_function(RT_equations,RT_args,sim_params):
+def create_params_lambda_solver_function(RT_equations,RT_args,sim_params,nsteps = 1000000):
     """
     
     Wrapper on the radiation transport solver such that it is a callable function of the free parameters a and b only
     
     """
-    params_RT_solve = lambda a,b : RT_solve(RT_equations,{'a' : a, 'b' : b},RT_args,sim_params)
+    params_RT_solve = lambda a,b : RT_solve(RT_equations,{'a' : a, 'b' : b},RT_args,sim_params,nsteps)
     return params_RT_solve
 
-def RT_solve(RT_equations,params,RT_args,sim_params,nsteps = 1000000):
+def RT_solve(RT_equations,params,RT_args,sim_params,nsteps):
     """
     
     Use diffrax to solve the provided radiation transport equations using provided settings

@@ -15,9 +15,9 @@ SuOlson_RT_args, SuOlson_sim_params = initialise_SuOlson_problem(Nx)
 # Initialise diffrax models
 SuOlson_sim_params = initialise_diffrax(SuOlson_sim_params)
 # Initialise optax learning rate schedule
-Ntrain_steps = 100
+Ntrain_steps = 400
 decay_rate   = 0.5
-boundaries   = [0.5]
+boundaries   = [0.25,0.5]
 lr_schedule  = create_piecewise_learning_rate_schedule(1e-2,Ntrain_steps,decay_rate,boundaries)
 
 # Get analytic solution
@@ -33,11 +33,11 @@ SuOlson_analytic_solution = get_SuOlson_analytic_solution(SuOlson_sim_params)
 #
 
 # Logical switches
-l_ThirdOrderMoment     = False
+l_ThirdOrderMoment     = True
 l_VariableEddington    = True
-l_FluxLimitedDiffusion = False
+l_FluxLimitedDiffusion = True
 l_plot_results         = False
-l_save_results         = False
+l_save_results         = True
 
 if(l_ThirdOrderMoment):
     # Third Order Moment solution

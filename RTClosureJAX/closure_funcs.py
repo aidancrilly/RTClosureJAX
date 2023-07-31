@@ -10,7 +10,9 @@ def create_lambda_params_constrained_pade(y0,y1,dfdy1):
     Returns constrained Pade form which is function of x and free parameters only
     
     """
-    return lambda x,a,b : constrained_pade(x,a,b,y0,y1,dfdy1)
+    pade = lambda x,a,b : constrained_pade(x,a,b,y0,y1,dfdy1)
+    coeffs = lambda a,b : constrained_pade_coeff(a,b,y0,y1,dfdy1)
+    return pade,coeffs
 
 def constrained_pade(x,a,b,f0,f1,dfdy1):
     """
@@ -34,6 +36,25 @@ def constrained_pade(x,a,b,f0,f1,dfdy1):
     a_num = jnp.insert(a_num,0,f0*b_sum-a_sum)
     f = jnp.polyval(a_num,y)/jnp.polyval(b_dom,y)
     return f
+
+def constrained_pade_coeff(a,b,f0,f1,dfdy1):
+    """
+    
+    Returns the coefficients of the constrained Pade approximant
+
+    a, b : free parameters
+    f0 : constraint on value at x = 0
+    f1 : constraint on value at x = 1
+    dfdy1 : constraint on gradient at x = 1
+    
+    """
+    b_dom = jnp.append(b,1.0)
+    a_num = jnp.append(a,f1)
+    a_num = jnp.insert(a_num,-1,-dfdy1+b_dom[-2])
+    a_sum = jnp.sum(a_num)
+    b_sum = jnp.sum(b_dom)
+    a_num = jnp.insert(a_num,0,f0*b_sum-a_sum)
+    return a_num,b_dom
 
 def unconstrained_pade(x,a,b):
     """

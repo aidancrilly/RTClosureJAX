@@ -12,7 +12,7 @@ Nx = 1200
 SuOlson_RT_args, SuOlson_sim_params = initialise_SuOlson_problem(Nx)
 
 # Load previously trained parameters
-optimal_params = load_optimal_params("new_opt_closure_params.json")
+optimal_params = load_optimal_params("opt_closure_params.json")
 
 # Initialise diffrax models
 SuOlson_sim_params = initialise_diffrax(SuOlson_sim_params)
@@ -27,7 +27,7 @@ SuOlson_sim_params = initialise_diffrax(SuOlson_sim_params)
 #
 
 # Logical switches
-l_DiscreteOrdinates    = False
+l_DiscreteOrdinates    = True
 l_ThirdOrderMoment     = False
 l_VariableEddington    = True
 l_FluxLimitedDiffusion = False

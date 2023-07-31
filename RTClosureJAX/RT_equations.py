@@ -2,6 +2,8 @@ import jax.numpy as jnp
 import jax
 import numpy as np
 
+from scipy.linalg import eig
+
 from .utils import SimDataDir
 from .closure_funcs import *
 
@@ -27,20 +29,18 @@ delta = 1e-10
 
 # Variable Eddington factor
 
-def initialise_VariableEddingtonFactor(RT_args, sim_params, dt_mult = 1e-1, stability_const = 0.1):
+def initialise_VariableEddingtonFactor(RT_args, sim_params, dt_mult = 1e-1):
     VEF_RT_args    = RT_args.copy()
     VEF_sim_params = sim_params.copy()
 
     VEF_RT_args['Np'] = 3
     VEF_sim_params['dt0'] = dt_mult*VEF_RT_args['dx']
-    VEF_RT_args['stability_const'] = stability_const
 
-    VEF_RT_args['Closure'] = create_lambda_params_constrained_pade(1.0/3.0,1.0,2.0)
-    VEF_RT_args['GradClosure'] = jax.vmap(jax.grad(VEF_RT_args['Closure']),in_axes = (0,None,None))
+    VEF_RT_args['Closure'],VEF_RT_args['ClosureCoeffs'] = create_lambda_params_constrained_pade(1.0/3.0,1.0,2.0)
 
     return VEF_RT_args, VEF_sim_params, VEF_RT_equations
 
-def VEFRoeSolve(delta_u,Fl,Fr,C,D,stability_const):
+def VEFRoeSolve(delta_u,Fl,Fr,C,D):
     """
     
     Following "One-dimensional Riemann solvers and the maximum entropy closure" by Brunner and Holloway
@@ -59,25 +59,25 @@ def VEFRoeSolve(delta_u,Fl,Fr,C,D,stability_const):
     sqrtdet = jnp.sqrt(jnp.where(det > 0.0, det , 0.0))
     lambda_plus  = 0.5*(C+sqrtdet)
     lambda_minus = 0.5*(C-sqrtdet)
+    sign    = -jnp.sign(lambda_minus)
     # Right eigenvectors
-    r_plus  = jnp.array((-lambda_minus,D))/jnp.sqrt(1+lambda_minus**2)
-    r_minus = jnp.array((-lambda_plus,D))/jnp.sqrt(1+lambda_plus**2)
+    r_plus  = sign*jnp.array(( 1.0 , lambda_plus  ))/jnp.sqrt(1.0+lambda_plus**2)
+    r_minus =      jnp.array((-1.0 , -lambda_minus))/jnp.sqrt(1.0+lambda_minus**2)
     # Left eigenvectors
-    l_plus  = jnp.array(( lambda_plus-C ,1.0))/jnp.sqrt(1+(lambda_plus-C)**2)
-    l_minus = jnp.array(( lambda_minus-C,1.0))/jnp.sqrt(1+(lambda_minus-C)**2)
-
+    l_plus  = sign*jnp.array(( lambda_plus -C, 1.0))/jnp.sqrt(1.0+(lambda_plus-C)**2)
+    l_minus =      jnp.array(( lambda_minus-C, 1.0))/jnp.sqrt(1.0+(lambda_minus-C)**2)
+    
+    # Correction term to centred differenced flux from Riemann problem
     CorrectionTerm = jnp.abs(lambda_plus)*jnp.outer(r_plus,l_plus)+jnp.abs(lambda_minus)*jnp.outer(r_minus,l_minus)
-    # Adding dissipation since eigenvalues can go to zero
-    CorrectionTerm += stability_const*jnp.eye(2)
 
     RoeTerm = jnp.matmul(CorrectionTerm,delta_u)
 
     flux = 0.5*(Fl+Fr)-0.5*RoeTerm
     return flux
 
-vectorised_VEFRoeSolve = jax.vmap(VEFRoeSolve,in_axes=(1,1,1,0,0,None),out_axes=1)
+vectorised_VEFRoeSolve = jax.vmap(VEFRoeSolve,in_axes=(1,1,1,0,0),out_axes=1)
 
-def VEFComputeRoeCoefficients(Closure,GradClosure,FR,p,a,b):
+def VEFComputeRoeCoefficients(FR,p):
     """
 
     D = (p_l f_r - p_r f_l)/(f_r - f_l)
@@ -92,13 +92,12 @@ def VEFComputeRoeCoefficients(Closure,GradClosure,FR,p,a,b):
     p_l = p[:-1]
     p_r = p[1:]
 
-    face_f  = 0.5*(f_r+f_l)
-    delta_f = (f_r-f_l)
-    sign_f_f = jnp.sign(face_f)
-    abs_d_f = jnp.abs(delta_f)
+    delta_f  = (f_r-f_l)
+    sign_d_f = jnp.sign(delta_f)
+    abs_d_f  = jnp.abs(delta_f)
 
-    C = jnp.where(abs_d_f > 1e-5, (p_r-p_l)/(delta_f+delta), sign_f_f*GradClosure(jnp.abs(face_f),a,b))
-    D = jnp.where(abs_d_f > 1e-5, (p_l*f_r-p_r*f_l)/(delta_f+delta), Closure(jnp.abs(face_f),a,b)-sign_f_f*face_f*GradClosure(jnp.abs(face_f),a,b))
+    C = sign_d_f*(p_r-p_l)/(abs_d_f+delta)
+    D = sign_d_f*(p_l*f_r-p_r*f_l)/(abs_d_f+delta)
 
     return C,D
 
@@ -111,9 +110,8 @@ def VEF_RT_equations(t,y,args):
     dx = args['dx']
     Np = args['Np']
     Nx = args['Nx']
-    GradClosure = args['GradClosure']
+
     Closure = args['Closure']
-    stability_const = args['stability_const']
 
     y = y.reshape(Np,Nx)
     W,F,V = y[0,:],y[1,:],y[2,:]
@@ -132,16 +130,16 @@ def VEF_RT_equations(t,y,args):
     dVdt = W-V
 
     # Eddington factor calculation
-    FR = F_ghost/(W_ghost+delta) 
+    FR = (F_ghost)/(W_ghost+delta) 
     p = Closure(jnp.abs(FR),a,b)
 
     # Riemann problem using Roe-type solver
-    C,D = VEFComputeRoeCoefficients(Closure,GradClosure,FR,p,a,b)
+    C,D = VEFComputeRoeCoefficients(FR,p)
     # Assemble left and right properties
     delta_u = jnp.vstack((W_ghost[1:]-W_ghost[:-1],F_ghost[1:]-F_ghost[:-1]))
     Fl = jnp.vstack((F_ghost[:-1],p[:-1]*W_ghost[:-1]))
     Fr = jnp.vstack((F_ghost[1:],p[1:]*W_ghost[1:]))
-    RoeFlux = vectorised_VEFRoeSolve(delta_u,Fl,Fr,C,D,stability_const)
+    RoeFlux = vectorised_VEFRoeSolve(delta_u,Fl,Fr,C,D)
     # Add advective terms onto time derivatives
     dWdt += -jnp.diff(RoeFlux[0,:],n=1)/dx/epsilon
     dFdt += -jnp.diff(RoeFlux[1,:],n=1)/dx/epsilon
@@ -158,7 +156,7 @@ def initialise_ThirdOrderMoment(RT_args, sim_params, dt_mult = 1e-1):
     TMC_RT_args['Np'] = 4
     TMC_sim_params['dt0'] = dt_mult*TMC_RT_args['dx']
 
-    TMC_RT_args['Closure'] = create_lambda_params_constrained_pade(0.0,1.0,1.0)
+    TMC_RT_args['Closure'],TMC_RT_args['ClosureCoeffs'] = create_lambda_params_constrained_pade(0.0,1.0,1.0)
 
     return TMC_RT_args, TMC_sim_params, TMC_RT_equations
 
@@ -215,7 +213,7 @@ def initialise_FluxLimitedDiffusion(RT_args, sim_params, fluxlimiter, dt_mult = 
     # Smaller time step needed to control the diffusive branch
     FLD_sim_params['dt0'] = dt_mult*FLD_RT_args['dx']
 
-    FLD_RT_args['Closure'] = create_lambda_params_constrained_pade(0.0,1.0,1.0)
+    FLD_RT_args['Closure'],FLD_RT_args['ClosureCoeffs'] = create_lambda_params_constrained_pade(0.0,1.0,1.0)
     FLD_RT_args['FluxLimiter'] = fluxlimiter
 
     return FLD_RT_args, FLD_sim_params, FLD_RT_equations
