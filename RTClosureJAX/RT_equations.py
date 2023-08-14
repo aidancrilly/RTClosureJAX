@@ -205,7 +205,7 @@ def TMC_RT_equations(t,y,args):
 
 # Flux-Limited Diffusion
 
-def initialise_FluxLimitedDiffusion(RT_args, sim_params, fluxlimiter, dt_mult = 1e-2):
+def initialise_FluxLimitedDiffusion(RT_args, sim_params, fluxlimiter, gClosure_a = None, gClosure_b = None, dt_mult = 1e-2):
     FLD_RT_args    = RT_args.copy()
     FLD_sim_params = sim_params.copy()
 
@@ -213,22 +213,29 @@ def initialise_FluxLimitedDiffusion(RT_args, sim_params, fluxlimiter, dt_mult = 
     # Smaller time step needed to control the diffusive branch
     FLD_sim_params['dt0'] = dt_mult*FLD_RT_args['dx']
 
-    FLD_RT_args['Closure'],FLD_RT_args['ClosureCoeffs'] = create_lambda_params_constrained_pade(0.0,1.0,1.0)
+    FLD_RT_args['gClosure'],FLD_RT_args['gClosureCoeffs'] = create_lambda_params_constrained_pade(0.0,1.0,1.0)
+    FLD_RT_args['gClosure_a'], FLD_RT_args['gClosure_b'] = gClosure_a, gClosure_b
     FLD_RT_args['FluxLimiter'] = fluxlimiter
+    FLD_RT_args['FLClosure'],FLD_RT_args['FLClosureCoeffs'] = create_lambda_params_constrained_pade(0.0,1.0)
 
     return FLD_RT_args, FLD_sim_params, FLD_RT_equations
 
 def FLD_RT_equations(t,y,args):
     # Unpack parameters
-    a = args['a']
-    b = args['b']
     SourceTerm = args['SourceTerm']
     epsilon = args['epsilon']
     dx = args['dx']
     Np = args['Np']
     Nx = args['Nx']
-    Closure = args['Closure']
+
+    gClosure = args['gClosure']
+    g_a = args['gClosure_a']
+    g_b = args['gClosure_b']
+
     FluxLimiter = args['FluxLimiter']
+    FLClosure = args['FLClosure']
+    a = args['a']
+    b = args['b']
 
     y = y.reshape(Np,Nx)
     W,V,P = y[0,:],y[1,:],y[2,:]
@@ -250,7 +257,7 @@ def FLD_RT_equations(t,y,args):
     EF_face  = jnp.where(diff_W < 0, EF[:-1] , EF[1:])
     p        = EF_face
     # Flux limited radiative flux calculation
-    lamb      = FluxLimiter(p,R_sq)
+    lamb      = FluxLimiter(p,R_sq,FLClosure,a,b)
     F_ghost   = -lamb*(diff_W/dx)
 
     # Radiation energy density update
@@ -258,7 +265,7 @@ def FLD_RT_equations(t,y,args):
     dWdt = (Q+V-W-divF)/epsilon
 
     # Radiation pressure factor update
-    divaF = jnp.diff(Closure(EF_face,a,b)*F_ghost,n=1)/dx
+    divaF = jnp.diff(gClosure(EF_face,g_a,g_b)*F_ghost,n=1)/dx
     dPdt = ((Q+V-3*P)/3.0-divaF)/epsilon
 
     # Material energy density update

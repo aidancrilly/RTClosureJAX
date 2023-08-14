@@ -8,7 +8,7 @@ from time import time
 import matplotlib.pyplot as plt
 
 # Create Su Olson problem set up
-Nx = 1200
+Nx = 300
 SuOlson_RT_args, SuOlson_sim_params = initialise_SuOlson_problem(Nx)
 
 # Load previously trained parameters
@@ -29,8 +29,8 @@ SuOlson_sim_params = initialise_diffrax(SuOlson_sim_params)
 # Logical switches
 l_DiscreteOrdinates    = True
 l_ThirdOrderMoment     = False
-l_VariableEddington    = True
-l_FluxLimitedDiffusion = False
+l_VariableEddington    = False
+l_FluxLimitedDiffusion = True
 
 if(l_DiscreteOrdinates):
     # Discrete Ordinates solution
@@ -68,10 +68,12 @@ if(l_VariableEddington):
 
 if(l_FluxLimitedDiffusion):
     # Flux Limited Diffusion solution
-    FLD_RT_args, FLD_sim_params, FLD_equations = initialise_FluxLimitedDiffusion(SuOlson_RT_args, SuOlson_sim_params, Levermore_fluxlimiter)
+    ga = jnp.array(optimal_params['TMC']['a'])
+    gb = jnp.array(optimal_params['TMC']['b'])
+    FLD_RT_args, FLD_sim_params, FLD_equations = initialise_FluxLimitedDiffusion(SuOlson_RT_args, SuOlson_sim_params, ML_Levermore_fluxlimiter, ga, gb)
     param_RT_solve = create_params_lambda_solver_function(FLD_equations, FLD_RT_args, FLD_sim_params)
-    a = jnp.array(optimal_params['FLD']['a'])
-    b = jnp.array(optimal_params['FLD']['b'])
+    a = jnp.array([-0.04650376, -0.04641125, -1.046298  ])
+    b = jnp.array([0.04599252, 0.04584053, 0.04566555])
     start = time()
     FLD_sol = param_RT_solve(a,b)
     print(f'FLD simulation complete in {time()-start} s')

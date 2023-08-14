@@ -33,8 +33,8 @@ SuOlson_analytic_solution = get_SuOlson_analytic_solution(SuOlson_sim_params)
 #
 
 # Logical switches
-l_ThirdOrderMoment     = True
-l_VariableEddington    = True
+l_ThirdOrderMoment     = False
+l_VariableEddington    = False
 l_FluxLimitedDiffusion = True
 l_plot_results         = False
 l_save_results         = True
@@ -69,11 +69,14 @@ if(l_VariableEddington):
 
 if(l_FluxLimitedDiffusion):
     # Flux Limited Diffusion solution
-    FLD_RT_args, FLD_sim_params, FLD_equations = initialise_FluxLimitedDiffusion(SuOlson_RT_args, SuOlson_sim_params, Levermore_fluxlimiter, dt_mult = 1e-3)
+    optimal_params = load_optimal_params("opt_closure_params.json")
+    ga = jnp.array(optimal_params['TMC']['a'])
+    gb = jnp.array(optimal_params['TMC']['b'])
+    FLD_RT_args, FLD_sim_params, FLD_equations = initialise_FluxLimitedDiffusion(SuOlson_RT_args, SuOlson_sim_params, ML_Levermore_fluxlimiter, ga, gb, dt_mult = 1e-3)
     param_RT_solve = create_params_lambda_solver_function(FLD_equations, FLD_RT_args, FLD_sim_params)
     param_ClosureLoss = create_params_lambda_loss_function(param_RT_solve,SuOlson_analytic_solution,FLD_sim_params)
     # Starting values
-    a0 = np.array([0.0,0.0,0.0])
+    a0 = np.array([0.0,0.0,-1.0])
     b0 = np.array([0.0,0.0,0.0])
     start = time()
     FLD_loss_history, FLD_opt_params = learn_closure(a0,b0,param_ClosureLoss,Ntrain_steps,lr_schedule)
