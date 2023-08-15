@@ -36,7 +36,7 @@ def initialise_VariableEddingtonFactor(RT_args, sim_params, dt_mult = 1e-1):
     VEF_RT_args['Np'] = 3
     VEF_sim_params['dt0'] = dt_mult*VEF_RT_args['dx']
 
-    VEF_RT_args['Closure'],VEF_RT_args['ClosureCoeffs'] = create_lambda_params_constrained_pade(1.0/3.0,1.0,2.0)
+    VEF_RT_args['Closure'],VEF_RT_args['ClosureCoeffs'] = create_lambda_params_constrained_pade(f0 = 1.0/3.0,f1 = 1.0,dfdy1 = 2.0)
 
     return VEF_RT_args, VEF_sim_params, VEF_RT_equations
 
@@ -156,7 +156,7 @@ def initialise_ThirdOrderMoment(RT_args, sim_params, dt_mult = 1e-1):
     TMC_RT_args['Np'] = 4
     TMC_sim_params['dt0'] = dt_mult*TMC_RT_args['dx']
 
-    TMC_RT_args['Closure'],TMC_RT_args['ClosureCoeffs'] = create_lambda_params_constrained_pade(0.0,1.0,1.0)
+    TMC_RT_args['Closure'],TMC_RT_args['ClosureCoeffs'] = create_lambda_params_constrained_pade(f0 = 0.0,f1 = 1.0,dfdy1 = 1.0)
 
     return TMC_RT_args, TMC_sim_params, TMC_RT_equations
 
@@ -213,10 +213,10 @@ def initialise_FluxLimitedDiffusion(RT_args, sim_params, fluxlimiter, gClosure_a
     # Smaller time step needed to control the diffusive branch
     FLD_sim_params['dt0'] = dt_mult*FLD_RT_args['dx']
 
-    FLD_RT_args['gClosure'],FLD_RT_args['gClosureCoeffs'] = create_lambda_params_constrained_pade(0.0,1.0,1.0)
+    FLD_RT_args['gClosure'],FLD_RT_args['gClosureCoeffs'] = create_lambda_params_constrained_pade(f0 = 0.0,f1 = 1.0,dfdy1 = 1.0)
     FLD_RT_args['gClosure_a'], FLD_RT_args['gClosure_b'] = gClosure_a, gClosure_b
     FLD_RT_args['FluxLimiter'] = fluxlimiter
-    FLD_RT_args['FLClosure'],FLD_RT_args['FLClosureCoeffs'] = create_lambda_params_constrained_pade(0.0,1.0)
+    FLD_RT_args['FLClosure'],FLD_RT_args['FLClosureCoeffs'] = create_lambda_params_constrained_pade(f0 = 0.0,f1 = 1.0,fx = (1.0/3.0,1.0/3.0))
 
     return FLD_RT_args, FLD_sim_params, FLD_RT_equations
 
