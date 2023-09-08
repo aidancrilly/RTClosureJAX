@@ -120,10 +120,9 @@ $$
 $$
 
 where $R_W$ and $R_F$ are the numerical fluxes calculated by the Roe scheme:
-
-$$
-\left(\begin{array}{c} R_{W,i+1/2} \\ R_{F,i+1/2} \end{array}\right) = \frac{1}{2} \left(\begin{array}{c} F_{i+1}+F_{i} \\ p(f_{i+1})W_{i+1}+p(f_{i})W_{i} \end{array}\right) + \frac{1}{2} \underline{C}(f_{i+1},f_{i}) \cdot \left(\begin{array}{c} W_{i+1}-W_{i} \\ F_{i+1}-F_{i} \end{array}\right)\ , 
-$$
+<p align="center">
+  <img src="https://latex.codecogs.com/gif.latex?%5Cdpi%7B100%7D%20%5Cbg_white%20%5Cleft%28%5Cbegin%7Barray%7D%7Bc%7D%20R_%7BW%2Ci&plus;1/2%7D%20%5C%5C%20R_%7BF%2Ci&plus;1/2%7D%20%5Cend%7Barray%7D%5Cright%29%20%3D%20%5Cfrac%7B1%7D%7B2%7D%20%5Cleft%28%5Cbegin%7Barray%7D%7Bc%7D%20F_%7Bi&plus;1%7D&plus;F_%7Bi%7D%20%5C%5C%20p%28f_%7Bi&plus;1%7D%29W_%7Bi&plus;1%7D&plus;p%28f_%7Bi%7D%29W_%7Bi%7D%20%5Cend%7Barray%7D%5Cright%29%20&plus;%20%5Cfrac%7B1%7D%7B2%7D%20%5Cunderline%7BC%7D%28f_%7Bi&plus;1%7D%2Cf_%7Bi%7D%29%20%5Ccdot%20%5Cleft%28%5Cbegin%7Barray%7D%7Bc%7D%20W_%7Bi&plus;1%7D-W_%7Bi%7D%20%5C%5C%20F_%7Bi&plus;1%7D-F_%7Bi%7D%20%5Cend%7Barray%7D%5Cright%29%20%5C%20%2C" />
+</p>
 
 where the correction matrix, $\underline{C}$, is given in Brunner and Holloway. In this scheme both flux and energy density are cell centred. The scheme's stability follows the advective CFL condition.
 
@@ -150,7 +149,7 @@ $$
 \epsilon \frac{\partial P_i}{\partial \tau} = -\frac{g(p_{i+1/2})F_{i+1/2}-g(p_{i-1/2})F_{i-1/2}}{\Delta x} - P_i + \frac{1}{3}(V_i+Q_i)
 $$
 
-if $F_{i+1/2} > 0$ then $p_{i+1/2} = (P/W)_{i}$ else $p_{i+1/2} = (P/W)_{i+1}$. The scheme's stability follows the advective CFL condition.
+if $F_{i+1/2} > 0$ then $p_{i+1/2} = \frac{P_{i}}{W_{i}}$ else $p_{i+1/2} = \frac{P_{i+1}}{W_{i+1}}$. The scheme's stability follows the advective CFL condition.
 
 ### Higher order flux-limited diffusion
 The higher order flux-limited diffusion model:
