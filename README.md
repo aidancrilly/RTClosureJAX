@@ -31,9 +31,7 @@ Here $U$, $W$, $V$ and $Q$ are the scaled radiation intensity, radiation energy 
 
 The analytic solutions given are performed for a source term of the following form:
 $$
-\begin{equation}
-Q(x,\tau) = \frac{1}{2x_0} \left[\Theta(x+x_0)-\Theta(x-x_0)\right]\left[\Theta(\tau)-\Theta(\tau-\tau_0)\right]
-\end{equation}
+Q(x,\tau) = \frac{1}{2x_{0}} \left[\Theta(x+x_{0})-\Theta(x-x_{0})\right]\left[\Theta(\tau)-\Theta(\tau-\tau_{0})\right] \ ,
 $$
 where $\Theta$ is the Heaviside function.
 
@@ -54,9 +52,7 @@ Examples of running and training the models are given in the 'Examples' director
 
 All models are solved using finite volume methods fully explicitly. Reflective boundary conditions are applied. Time stepping was performed using Huen's method, which solves:
 $$
-\begin{equation}
 \frac{\partial y}{\partial \tau} = f(y,\tau)
-\end{equation}
 $$
 by
 $$
@@ -126,9 +122,7 @@ g\left(p = \frac{P}{W}\right)
 $$
 were solved using face-centred fluxes and first order finite differencing. The donor cell Eddington factor ($p$) was used to get a face centred value of the closure in the pressure equation
 $$
-\begin{equation}
 \epsilon \frac{\partial P_i}{\partial \tau} = -\frac{g(p_{i+1/2})F_{i+1/2}-g(p_{i-1/2})F_{i-1/2}}{\Delta x} - P_i + \frac{1}{3}(V_i+Q_i)
-\end{equation}
 $$
 if $F_{i+1/2} > 0$ then $p_{i+1/2} = (P/W)_{i}$ else $p_{i+1/2} = (P/W)_{i+1}$. The scheme's stability follows the advective CFL condition.
 
@@ -147,21 +141,15 @@ used a similar donor cell method to obtain face-centred values, as in flux-limit
 
 Discrete ordinates numerically solve the full radiation transport equation using a Gauss-Legendre quadrature set for the angular coordinate, $\mu$. This goes as follows, for $\mu > 0$:
 $$
-\begin{equation}
 \epsilon \frac{\partial U_{i,n}}{\partial \tau}= - \mu_n \frac{U_{i,n}-U_{i-1,n}}{\Delta x}-U_{i,n}+\frac{1}{2}V_i+\frac{1}{2}Q_i \ , 
-\end{equation}
 $$
 for $\mu$ < 0:
 $$
-\begin{equation}
 \epsilon \frac{\partial U_{i,n}}{\partial \tau}= - \mu_n \frac{U_{i+1,n}-U_{i,n}}{\Delta x}-U_{i,n}+\frac{1}{2}V_i+\frac{1}{2}Q_i \ ,
-\end{equation} 
 $$
 where $n$ is the angular index. For each ordinate $\mu_n$, there is an ordinate weight, $w_n$. These are used to compute angular moments of $U_{i,n}$, for example:
 $$
-\begin{equation}
 W_{i} = \sum_n w_n U_{i,n} \ .
-\end{equation}
 $$
 The $\mu_n$ and $w_n$ values for a 32 ordinates set are stored in files under the 'SimData' directory.
 
