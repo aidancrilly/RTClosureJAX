@@ -151,10 +151,12 @@ def unconstrained_pade(x,a,b):
 def ML_Levermore_fluxlimiter(p,R_sq,Closure,a,b):
     """
     
-    Levermore's relationship between flux limiter, Eddington factor and normalised energy gradient
+    Modified Levermore relationship between flux limiter, Eddington factor and normalised energy gradient
 
     p : Eddington factor (0 < p < 1)
     R_sq : Squared normalised gradient
+    Closure : Closure function inserted into the Levermore flux limiter relation, Closure is a function of a,b and p
+    a,b : Closure parameters
     
     """
     p = jnp.where(p > 1, 1, p)
@@ -184,6 +186,8 @@ def Larsen_2_fluxlimiter(p,R_sq,Closure,a,b):
     """
     
     Larsen's flux limiter with n = 2
+
+    R_sq : Squared normalised gradient
 
     N.B. independent of Eddington factor, p
     

@@ -122,6 +122,11 @@ def get_SuOlson_analytic_solution(SuOlson_sim_params):
     return analyticsol
 
 def load_optimal_params(opt_param_file):
+    """
+    
+    Loads previously trained closure parameters from .json file
+    
+    """
     if(opt_param_file.split('.')[-1] == 'json'):
         with open(SimDataDir+opt_param_file, 'r') as json_file:
             json_dict = json.load(json_file)

@@ -16,9 +16,10 @@ epsilon = 4 (radiation constant)/(heat capacity prefactor)
 
 x = normalised position coordinate
 tau/t = normalised time coordinate
+mu = propagation direction cosine
 
 Reflective boundaries
-- for Su Olson problem, left hand boundary placed sufficiently far away
+- for Su Olson problem, right hand boundary placed sufficiently far away
 
 """
 
@@ -48,8 +49,6 @@ def VEFRoeSolve(delta_u,Fl,Fr,C,D):
     R(u_l,u_r) = ( 0, 1)
                  ( D, C)
 
-    Extra dissipation is added as eigenvalues can go through zero
-    
     """
 
     # Eigenvalues
@@ -82,6 +81,7 @@ def VEFComputeRoeCoefficients(FR,p):
     C = (p_r - p_l)/(f_r - f_l)
 
     where p is the Eddington factor and f is the flux ratio
+    l and r denote left-hand and right-hand cell
     
     """
 
@@ -290,6 +290,11 @@ def initialise_DiscreteOrdinates(RT_args, sim_params,dt_mult = 1e-1):
 
 
 def SN_forward_sweep(m,dpsidt_arr,psi,psi0,V,Q,epsilon,dx):
+    """
+    
+    Integration sweep in position for positive mu, i.e. photons travelling in +x direction
+    
+    """
     psim = psi[m,:]
     psi_ghost = jnp.insert(psim,0,psi0)
     dpsidt = (-mun[m]*jnp.diff(psi_ghost,n=1)/dx-psim+V/2+Q/2)/epsilon
@@ -297,6 +302,11 @@ def SN_forward_sweep(m,dpsidt_arr,psi,psi0,V,Q,epsilon,dx):
     return dpsidt_arr
 
 def SN_backward_sweep(m,dpsidt_arr,psi,psi0,V,Q,epsilon,dx):
+    """
+    
+    Integration sweep in position for negative mu, i.e. photons travelling in -x direction
+    
+    """
     psim = psi[m,:]
     psi_ghost = jnp.append(psim,psi0)
     dpsidt = (-mun[m]*jnp.diff(psi_ghost,n=1)/dx-psim+V/2+Q/2)/epsilon

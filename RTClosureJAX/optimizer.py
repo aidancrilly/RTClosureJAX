@@ -15,6 +15,7 @@ def ClosureLoss(params,model,analyticsol,sim_params):
     """
     
     Loss function used to optimise closure parameters e.g. Squared Error
+    Compute a model solution using input parameters and model function, passes the resulting energy density to LossCalc
 
     """
     pred_sol = model(params['a'],params['b'])
