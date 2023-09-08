@@ -11,16 +11,25 @@ def create_params_lambda_loss_function(params_RT_solve,analyticsol,RT_args):
     params_ClosureLoss = lambda params : ClosureLoss(params,params_RT_solve,analyticsol,RT_args)
     return params_ClosureLoss
 
-
 def ClosureLoss(params,model,analyticsol,sim_params):
     """
     
-    Loss function used to optimise closure parameters e.g. Mean Squared Error
+    Loss function used to optimise closure parameters e.g. Squared Error
 
     """
     pred_sol = model(params['a'],params['b'])
     Wsol = pred_sol[:,0,:]
 
+    loss = LossCalc(Wsol,analyticsol,sim_params)
+
+    return loss
+
+def LossCalc(Wsol,analyticsol,sim_params):
+    """
+    
+    Squared Error loss between simulated energy density and analytic solution
+
+    """
     loss = 0.0
     for it in range(sim_params['Nt']):
         loss += jnp.sum((jnp.interp(analyticsol['x'], sim_params['x'], Wsol[it,:])-analyticsol['W'][it,:])**2)

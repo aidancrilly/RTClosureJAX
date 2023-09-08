@@ -9,7 +9,7 @@ from time import time
 import matplotlib.pyplot as plt
 
 # Create Su Olson problem set up
-Nx = 100
+Nx = 400
 SuOlson_RT_args, SuOlson_sim_params = initialise_SuOlson_problem(Nx)
 
 # Initialise diffrax models
@@ -72,12 +72,12 @@ if(l_FluxLimitedDiffusion):
     optimal_params = load_optimal_params("opt_closure_params.json")
     ga = jnp.array(optimal_params['TMC']['a'])
     gb = jnp.array(optimal_params['TMC']['b'])
-    FLD_RT_args, FLD_sim_params, FLD_equations = initialise_FluxLimitedDiffusion(SuOlson_RT_args, SuOlson_sim_params, ML_Levermore_fluxlimiter, ga, gb, dt_mult = 5e-3)
+    FLD_RT_args, FLD_sim_params, FLD_equations = initialise_FluxLimitedDiffusion(SuOlson_RT_args, SuOlson_sim_params, ML_Levermore_fluxlimiter, ga, gb, dt_mult = 1e-3)
     param_RT_solve = create_params_lambda_solver_function(FLD_equations, FLD_RT_args, FLD_sim_params)
     param_ClosureLoss = create_params_lambda_loss_function(param_RT_solve,SuOlson_analytic_solution,FLD_sim_params)
     # Starting values
-    a0 = np.array([0.0,0.0,-1.0])
-    b0 = np.array([0.0,0.0,0.0])
+    a0 = np.array([0.0,0.0,0.3])
+    b0 = np.array([0.0,0.0,4.0])
     start = time()
     FLD_loss_history, FLD_opt_params = learn_closure(a0,b0,param_ClosureLoss,Ntrain_steps,lr_schedule)
     print(f'FLD training complete in {time()-start} s')

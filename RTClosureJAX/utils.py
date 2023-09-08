@@ -110,12 +110,14 @@ def get_SuOlson_analytic_solution(SuOlson_sim_params):
     
     """
     x_data = np.loadtxt(f"{SuOlsonDataDir}SuOlsonx.dat")
-    W_data = np.loadtxt(f"{SuOlsonDataDir}SuOlson_W_transport.dat")
-    V_data = np.loadtxt(f"{SuOlsonDataDir}SuOlson_V_transport.dat")
+    W_data  = np.loadtxt(f"{SuOlsonDataDir}SuOlson_W_transport.dat")
+    V_data  = np.loadtxt(f"{SuOlsonDataDir}SuOlson_V_transport.dat")
+    WD_data = np.loadtxt(f"{SuOlsonDataDir}SuOlson_W_diffusion.dat")
+    VD_data = np.loadtxt(f"{SuOlsonDataDir}SuOlson_V_diffusion.dat")
 
     Nt = SuOlson_sim_params['Nt']
 
-    analyticsol = {'x' : x_data, 'W' : W_data.T[:Nt,:], 'V' : V_data.T[:Nt,:]}
+    analyticsol = {'x' : x_data, 'W' : W_data.T[:Nt,:], 'V' : V_data.T[:Nt,:], 'W_diffusion' : WD_data.T[:Nt,:], 'V_diffusion' : VD_data.T[:Nt,:]}
 
     return analyticsol
 
