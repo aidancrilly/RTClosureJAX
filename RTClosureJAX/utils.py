@@ -2,9 +2,10 @@ import jax.numpy as jnp
 import jax
 import numpy as np
 import json
+import os
 
-SuOlsonDataDir = r"C:\\Users\\Aidan Crilly\\Documents\\GitHub\\RTClosureJAX\\SuOlsonData\\"
-SimDataDir = r"C:\\Users\\Aidan Crilly\\Documents\\GitHub\\RTClosureJAX\\SimData\\"
+SuOlsonDataDir = os.path.join(os.path.dirname(__file__), '../SuOlsonData/')
+SimDataDir = os.path.join(os.path.dirname(__file__), '../SimData/')
 
 def DualExternalSource(x,tau,x0,tau0,dx):
     """
