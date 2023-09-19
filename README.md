@@ -10,6 +10,22 @@ Uses JAX, diffrax and optax libraries.
 
 E-mail: ac116@ic.ac.uk
 
+## Reproducing results
+
+The 'Examples/' directory provides a number scripts that can be used to reproduce solutions to the original and modified Su & Olson problem, as well as the training process:
+
+- RunSuOlson.py
+
+This contains the default settings used to run solutions to the original Su & Olson problem for the various models. By default, it reads the closure parameters from the SimData/opt_closure_params.json file which contains optimal parameters found by the author using TrainSuOlson.py
+
+- TrainSuOlson.py
+
+This contains the default settings used to train the closure relations to the original Su & Olson problem with the various models. N.B. the higher order flux limited diffusion (HFLD) model requires an accurate g-closure from the third order moment model to run. Therefore, if training from scratch, the third order model must be trained before HFLD. Optimal parameters are saved to a json file in 'SimData/'
+
+- RunModifiedSuOlson.py
+
+This contains the default settings used to run solutions to the modified Su & Olson problem for the various models. By default, it reads the closure parameters from the SimData/opt_closure_params.json file.
+
 ## The Su & Olson test problem
 
 The training data for the closures comes from the Su & Olson test problem. In this problem, the coupled system of equations to be solved are the following:
@@ -185,6 +201,10 @@ W_{i} = \sum_n w_n U_{i,n} \ .
 $$
 
 The $\mu_n$ and $w_n$ values for a 32 ordinates set are stored in files under the 'SimData' directory.
+
+## Tests
+
+A number of tests of the numerical schemes are given in the 'Tests/' directory.
 
 ## Installation
 

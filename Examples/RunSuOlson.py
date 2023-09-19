@@ -27,8 +27,8 @@ SuOlson_sim_params = initialise_diffrax(SuOlson_sim_params)
 #
 
 # Logical switches
-l_DiscreteOrdinates    = True
-l_ThirdOrderMoment     = False
+l_DiscreteOrdinates    = False
+l_ThirdOrderMoment     = True
 l_VariableEddington    = False
 l_FluxLimitedDiffusion = True
 

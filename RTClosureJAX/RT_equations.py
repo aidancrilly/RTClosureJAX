@@ -174,9 +174,9 @@ def TMC_RT_equations(t,y,args):
     Q = SourceTerm(t)
 
     # Add ghost cells
-    W_ghost = jnp.insert(W,0,W[1])
+    W_ghost = jnp.insert(W,0,W[0])
     W_ghost = jnp.append(W_ghost,W[-1])
-    P_ghost = jnp.insert(P,0,P[1])
+    P_ghost = jnp.insert(P,0,P[0])
     P_ghost = jnp.append(P_ghost,P[-1])
     F_ghost = jnp.insert(F,0,0.0)
 
@@ -240,9 +240,9 @@ def FLD_RT_equations(t,y,args):
     Q = SourceTerm(t)
 
     # Add ghost cells
-    W_ghost = jnp.insert(W,0,W[1])
+    W_ghost = jnp.insert(W,0,W[0])
     W_ghost = jnp.append(W_ghost,W[-1])
-    P_ghost = jnp.insert(P,0,P[1])
+    P_ghost = jnp.insert(P,0,P[0])
     P_ghost = jnp.append(P_ghost,P[-1])
 
     # Normalised gradient
