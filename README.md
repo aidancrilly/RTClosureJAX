@@ -1,3 +1,5 @@
+![tests workflow](https://github.com/aidancrilly/RTClosureJAX/actions/workflows/tests.yml/badge.svg?event=push)
+
 # RTClosureJAX
 
 This repository contains the code base for following publication: 
