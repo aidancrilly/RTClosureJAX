@@ -24,7 +24,7 @@ Reflective boundaries
 """
 
 # Divide by zero safety factor
-delta = 1e-10
+delta = 1e-8
 
 # Variable Eddington factor
 
@@ -39,7 +39,7 @@ def initialise_VariableEddingtonFactor(RT_args, sim_params, dt_mult = 1e-1):
 
     return VEF_RT_args, VEF_sim_params, VEF_RT_equations
 
-def VEFRoeSolve(delta_u,Fl,Fr,C,D):
+def VEFRoeSolve(delta_u,Fl,Fr,C,D,stability_const=1e-3):
     """
     
     Following "One-dimensional Riemann solvers and the maximum entropy closure" by Brunner and Holloway
@@ -65,7 +65,9 @@ def VEFRoeSolve(delta_u,Fl,Fr,C,D):
     l_minus =      jnp.array(( lambda_minus-C, 1.0))/jnp.sqrt(1.0+(lambda_minus-C)**2)
     
     # Correction term to centred differenced flux from Riemann problem
-    CorrectionTerm = jnp.abs(lambda_plus)*jnp.outer(r_plus,l_plus)+jnp.abs(lambda_minus)*jnp.outer(r_minus,l_minus)
+    lambda_plus  = jnp.sqrt(lambda_plus**2+stability_const)
+    lambda_minus = jnp.sqrt(lambda_minus**2+stability_const)
+    CorrectionTerm = lambda_plus*jnp.outer(r_plus,l_plus)+lambda_minus*jnp.outer(r_minus,l_minus)
 
     RoeTerm = jnp.matmul(CorrectionTerm,delta_u)
 

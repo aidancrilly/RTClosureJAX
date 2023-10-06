@@ -163,7 +163,7 @@ def ML_Levermore_fluxlimiter(p,R_sq,Closure,a,b):
     p = jnp.where(p < 0, 0, p)
     R_sq = jnp.where(R_sq < 0, 0, R_sq)
     det      = 1+4*R_sq*(Closure(p,a,b))
-    sqrt_det = jnp.sqrt(det)
+    sqrt_det = jnp.sqrt(jnp.where(det > 0.0, det, 0.0))
     return (sqrt_det-1)/(2*(R_sq+delta))
 
 def Levermore_fluxlimiter(p,R_sq,Closure,a,b):

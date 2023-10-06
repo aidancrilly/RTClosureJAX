@@ -14,11 +14,10 @@ SuOlson_RT_args, SuOlson_sim_params = initialise_SuOlson_problem(Nx)
 
 # Initialise diffrax models
 SuOlson_sim_params = initialise_diffrax(SuOlson_sim_params)
-# Initialise optax learning rate schedule
+# Learning parameters
 Ntrain_steps = 400
 decay_rate   = 0.5
-boundaries   = [0.25,0.5]
-lr_schedule  = create_piecewise_learning_rate_schedule(1e-2,Ntrain_steps,decay_rate,boundaries)
+boundaries   = [1/4,1/2]
 
 # Get analytic solution
 SuOlson_analytic_solution = get_SuOlson_analytic_solution(SuOlson_sim_params)
@@ -33,13 +32,15 @@ SuOlson_analytic_solution = get_SuOlson_analytic_solution(SuOlson_sim_params)
 #
 
 # Logical switches
-l_ThirdOrderMoment     = False
-l_VariableEddington    = False
+l_ThirdOrderMoment     = True
+l_VariableEddington    = True
 l_FluxLimitedDiffusion = True
 l_plot_results         = False
 l_save_results         = True
 
 if(l_ThirdOrderMoment):
+    # Initialise optax learning rate schedule
+    lr_schedule  = create_piecewise_learning_rate_schedule(2e-2,Ntrain_steps,decay_rate,boundaries)
     # Third Order Moment solution
     TMC_RT_args, TMC_sim_params, TMC_equations = initialise_ThirdOrderMoment(SuOlson_RT_args, SuOlson_sim_params)
     param_RT_solve = create_params_lambda_solver_function(TMC_equations, TMC_RT_args, TMC_sim_params)
@@ -54,13 +55,15 @@ if(l_ThirdOrderMoment):
     # fin.
 
 if(l_VariableEddington):
+    # Initialise optax learning rate schedule
+    lr_schedule  = create_piecewise_learning_rate_schedule(1e-3,Ntrain_steps,decay_rate,boundaries)
     # Variable Eddington Factor solution
     VEF_RT_args, VEF_sim_params, VEF_equations = initialise_VariableEddingtonFactor(SuOlson_RT_args, SuOlson_sim_params)
     param_RT_solve = create_params_lambda_solver_function(VEF_equations, VEF_RT_args, VEF_sim_params)
     param_ClosureLoss = create_params_lambda_loss_function(param_RT_solve,SuOlson_analytic_solution,VEF_sim_params)
     # Starting values
     a0 = jnp.array([0.0,-4.0/3.0,2.0])
-    b0 = jnp.array([0.0,0.0,0.0])
+    b0 = jnp.array([-0.5,-0.25,0.0])
     start = time()
     VEF_loss_history, VEF_opt_params = learn_closure(a0,b0,param_ClosureLoss,Ntrain_steps,lr_schedule)
     print(f'VEF training complete in {time()-start} s')
@@ -68,16 +71,18 @@ if(l_VariableEddington):
     # fin.
 
 if(l_FluxLimitedDiffusion):
+    # Initialise optax learning rate schedule
+    lr_schedule  = create_piecewise_learning_rate_schedule(1e-3,Ntrain_steps,decay_rate,boundaries)
     # Flux Limited Diffusion solution
     optimal_params = load_optimal_params("opt_closure_params.json")
     ga = jnp.array(optimal_params['TMC']['a'])
     gb = jnp.array(optimal_params['TMC']['b'])
-    FLD_RT_args, FLD_sim_params, FLD_equations = initialise_FluxLimitedDiffusion(SuOlson_RT_args, SuOlson_sim_params, ML_Levermore_fluxlimiter, ga, gb, dt_mult = 1e-3)
+    FLD_RT_args, FLD_sim_params, FLD_equations = initialise_FluxLimitedDiffusion(SuOlson_RT_args, SuOlson_sim_params, ML_Levermore_fluxlimiter, ga, gb)
     param_RT_solve = create_params_lambda_solver_function(FLD_equations, FLD_RT_args, FLD_sim_params)
     param_ClosureLoss = create_params_lambda_loss_function(param_RT_solve,SuOlson_analytic_solution,FLD_sim_params)
     # Starting values
-    a0 = np.array([0.0,0.0,0.3])
-    b0 = np.array([0.0,0.0,4.0])
+    a0 = np.array([0.0,0.25,0.1])
+    b0 = np.array([1.0,1.5,5.0])
     start = time()
     FLD_loss_history, FLD_opt_params = learn_closure(a0,b0,param_ClosureLoss,Ntrain_steps,lr_schedule)
     print(f'FLD training complete in {time()-start} s')
@@ -95,7 +100,7 @@ if(l_plot_results):
     ax1.set_ylabel("W")
     ax2.set_ylabel("V")
     ax3.set_ylabel("F")
-    ax4.set_ylabel("f")
+    ax4.set_ylabel("p")
 
     ax4.set_xlabel("x")
 

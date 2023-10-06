@@ -92,7 +92,7 @@ ax4 = fig.add_subplot(414,sharex=ax1)
 ax1.set_ylabel("W")
 ax2.set_ylabel("V")
 ax3.set_ylabel("F")
-ax4.set_ylabel("f")
+ax4.set_ylabel("p")
 
 ax4.set_xlabel("x")
 
